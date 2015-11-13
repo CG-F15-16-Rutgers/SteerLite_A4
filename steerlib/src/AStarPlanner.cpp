@@ -82,7 +82,7 @@ namespace SteerLib
         openSet.push(&startNode);
 
         while(!openSet.empty()){
-            const AStarPlannerNode&* currentNode = openSet.top();
+            const AStarPlannerNode* currentNode = openSet.top();
             openSet.pop();
             closeSet.push(currentNode);
 
@@ -178,3 +178,4 @@ namespace SteerLib
     }
 
 }
+

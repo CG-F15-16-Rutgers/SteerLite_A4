@@ -57,16 +57,17 @@ namespace SteerLib
 	};
 
     class STEERLIB_API NodeCompare{
-        bool operator()(const AStarPlannerNode&* n1, const AStarPlannerNode&* n2){
-            if(n2->f < n1->f){
-                return true;
-            }
-            if(n1->f == n2->f && n2->g < n1->g){    // if the same f value, smaller g value gets higher priority;
-                return true;
-            }
-            return false;
-        } 
-    }
+        public:
+            bool operator()(const AStarPlannerNode* n1, const AStarPlannerNode* n2) const{
+                if(n2->f < n1->f){
+                    return true;
+                }
+                if((n1->f == n2->f) && (n2->g < n1->g)){    // if the same f value, smaller g value gets higher priority;
+                    return true;
+                }
+                return false;
+            } 
+    };
 
 
 	class STEERLIB_API AStarPlanner{
@@ -110,7 +111,7 @@ namespace SteerLib
 		private:
 			SteerLib::GridDatabase2D * gSpatialDatabase;
             std::priority_queue<AStarPlannerNode*, std::set<AStarPlannerNode*>, NodeCompare> openSet;
-            std::set<AStarPlannerNode> closeSet;
+            std::set<AStarPlannerNode*> closeSet;
 
 	};
 
