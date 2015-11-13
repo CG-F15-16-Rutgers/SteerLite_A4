@@ -56,7 +56,18 @@ namespace SteerLib
 
 	};
 
-	
+    class STEERLIB_API NodeCompare{
+        bool operator()(const AStarPlannerNode&* n1, const AStarPlannerNode&* n2){
+            if(n2->f < n1->f){
+                return true;
+            }
+            if(n1->f == n2->f && n2->g < n1->g){    // if the same f value, smaller g value gets higher priority;
+                return true;
+            }
+            return false;
+        } 
+    }
+
 
 	class STEERLIB_API AStarPlanner{
 		public:
@@ -98,6 +109,9 @@ namespace SteerLib
 			bool computePath(std::vector<Util::Point>& agent_path, Util::Point start, Util::Point goal, SteerLib::GridDatabase2D * _gSpatialDatabase, bool append_to_path = false);
 		private:
 			SteerLib::GridDatabase2D * gSpatialDatabase;
+            std::priority_queue<AStarPlannerNode*, std::set<AStarPlannerNode*>, NodeCompare> openSet;
+            std::set<AStarPlannerNode> closeSet;
+
 	};
 
 

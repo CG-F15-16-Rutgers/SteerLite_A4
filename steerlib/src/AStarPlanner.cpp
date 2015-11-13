@@ -73,9 +73,108 @@ namespace SteerLib
 	{
 		gSpatialDatabase = _gSpatialDatabase;
 
-		//TODO
-		std::cout<<"\nIn A*";
+        int start_id = gSpatialDatabase->getCellIndexFromLocation(start.x, start.z);
+        int goal_id = gSpatialDatabase->getCellIndexFromLocation(goal.x, goal.z);
+
+        AStarPlannerNode startNode = new AStarPlannerNode(start, 0, heuristicManhattan(start_id, goal_id), null);               //use euclidean as alternative 
+        AStarPlannerNode goalNode = new AStarPlannerNode(goal, 0, 0, null);
+
+        openSet.push(&startNode);
+
+        while(!openSet.empty()){
+            const AStarPlannerNode&* currentNode = openSet.top();
+            openSet.pop();
+            closeSet.push(currentNode);
+
+            if(*currentNode == goalNode){
+                return constructPath(agent_path, currentNode);
+            }
+
+            std::vector<AStarPlannerNode> neighbors = getNeighborNodes(gSpatialDatabase->getCellIndexFromLocation(currentNode->poit.x, currentNode->point.z));
+
+            for (std::vector<AStarPlannerNode>::iterator it = neighbors.begin(); 
+                    it != neighbors.end(); ++it){
+                if(it->point.x< 0 || it->point.x > gSpatialDatabase->getNumCellsX - 1
+                        || it->point.z < 0 || it->point.z > gSpatialDatabase->getNumCellsZ - 1)
+                {
+                    continue;
+                }
+
+                int neighbor_id = gSpatialDatabase->getCellIndexFromLocation(it->point); 
+
+                if(!canBeTraversed(neighbor_id)){
+                    continue;
+                }
+
+                if(closeSet.find(it) != closeSet.end()){
+                    continue;
+                }
+                double new_g = currentNode.g + 1;
+
+                if(new_g < it->g){
+                    it->parent = currentNode;
+                    it->g = new_g;
+                    it->f = new_g +  heuristicManhattan(neighbor_id, goal_id);
+                }
+                
+                if(openSet.find(it) == openSet.end()){
+                    openSet.push(it);
+                }
+            }
+
+        }
 
 		return false;
 	}
+
+    std::vector<AStarPlannerNode> getNeighborNodes(unsigned int current_id){
+        unsigned int x, z;
+        gSpatialDatabase->getGridCoordinatesFromIndex(current_id, x, z);
+        std::vector<AStarPlannerNode> neighbors;
+        Util::Point result;
+        std::vector<std::pair<unsigned int, unsigned int>> neiCells(
+                std::pair<x-1, z-1>, std::pair<x-1, z>, std::pair<x-1, z+1>,
+                std::pair<x+1, z-1>, std::pair<x+1, z>, std::pair<x+1, z+1>,
+                std::pair<x,z-1>, std::pair<x,z+1>);
+        //very stupid implementation here...........
+        
+        for(std::vector<std::pair<unsigned int, unsigned int>>::iterator it = neiCells.begin(); it != neiCells.end(); ++it){
+
+            gSpatialDatabase->getLocationFromIndex(gSpatialDatabase->getCellIndexFromGridCoords(it->first, it->second), result);
+            neighbors.push_back(AStarPlannerNode(result, std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), null));
+
+        }
+        
+        return neighbors;
+    }
+
+    bool constructPath(std::vector<Util::Point>& agent_path, AStarPlannerNode&* endNode)
+    {
+        if(!endNode){
+            return false;
+        }
+        while(endNode->parent){
+            std::vector<Utill::Point>::iterator it = agent_path.begin();
+            agent_path.insert(it, endNode->point);
+            endNode = endNode->parent;
+        }    
+        return true;
+    }
+
+    int heuristicManhattan(int start_id, int goal_id){
+        unsigned int start_x, start_z, goal_x, goal_z;
+        gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
+        gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
+
+        return double(abs(goal_x - start_x) + abs(goal_z - start_z));
+    }
+
+    int heuristicEuclidean(int start_id, int goal_id){
+        unsigned int start_x, start_z, goal_x, goal_z;
+        gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
+        gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
+
+        return sqrt(pow(double((goal_x - start_x)), 2.0) + pow(double(goal_z - start_z), 2.0));   
+    }
+
 }
