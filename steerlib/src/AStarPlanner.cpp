@@ -96,12 +96,13 @@ namespace SteerLib {
 		openSet.push_back(startNode);
 
 		while(!openSet.empty()){
-/*			std::cout << "open set is :";
+			std::cout << "open set is :" << std::endl;
 			for (int i = 0; i < openSet.size(); ++i) {
-				std::cout << openSet[i]->f << " ";
+				std::cout << openSet[i]->point.x << " "<< openSet[i]->point.z << " " << openSet[i]->cell.x << " " << openSet[i]->cell.z << " " << openSet[i]->f << " " << openSet[i]->g << std::endl;
 			}
+
 			std::cout << std::endl;
-*/
+
 			AStarPlannerNode* currentNode = *(openSet.begin());
 			openSet.erase(openSet.begin());
 			closeSet.insert(currentNode);

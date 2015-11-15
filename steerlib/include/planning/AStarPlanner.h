@@ -73,10 +73,10 @@ The greater than, less than and equals operator have been overloaded. This means
 	class STEERLIB_API NodeCompare{
 		public:
 		bool operator()(const AStarPlannerNode* n1, const AStarPlannerNode* n2){
-			if(n2->f < n1->f){
+			if(n2->f > n1->f){
 				return true;
 			}
-			if(n1->f == n2->f && n2->g > n1->g){    // if the same f value, bigger g value gets higher priority;
+			if(n1->f == n2->f && n2->g < n1->g){    // smaller f first, bigger g first
 				return true;
 			}
 			return false;
