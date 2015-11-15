@@ -49,7 +49,7 @@ namespace SteerLib
 			{
 				int index = gSpatialDatabase->getCellIndexFromGridCoords( i, j );
 				traversal_cost += gSpatialDatabase->getTraversalCost ( index );
-				
+
 			}
 		}
 
@@ -72,109 +72,119 @@ namespace SteerLib
 	bool AStarPlanner::computePath(std::vector<Util::Point>& agent_path,  Util::Point start, Util::Point goal, SteerLib::GridDatabase2D * _gSpatialDatabase, bool append_to_path)
 	{
 		gSpatialDatabase = _gSpatialDatabase;
+		maze.resize(gSpatialDatabase->getNumCellsX());
+		for (int i = 0; i < maze.size(); ++i) {
+			maze[i].resize(gSpatialDatabase->getNumCellsZ());
+			for ( int j = 0; j < maze[i].size(); ++j) {
+				maze[i][j].cell.x = i;
+				maze[i][j].cell.z = j;
+				maze[i][j].cell.y = 0;
+				maze[i][j].index = gSpatialDatabase->getCellIndexFromGridCoords(i, j);
+				gSpatialDatabase->getLocationFromIndex(maze[i][j].index, maze[i][j].point);
+			}
+		}
+		
+		unsigned int start_index = gSpatialDatabase->getCellIndexFromLocation(start);
+		unsigned int goal_index = gSpatialDatabase->getCellIndexFromLocation(goal);
+		unsigned int start_x, start_z;
+	       unsigned int goal_x, goal_z;
+       		gSpatialDatabase->getGridCoordinatesFromIndex(start_index, start_x, start_z); 
+       		gSpatialDatabase->getGridCoordinatesFromIndex(goal_index, goal_x, goal_z); 
+		AStarPlannerNode* startNode = &maze[start_x][start_z];//new AStarPlannerNode(start, 0, heuristicManhattan(start_id, goal_id), NULL);               //use euclidean as alternative 
+		AStarPlannerNode* goalNode = &maze[goal_x][goal_z];//new AStarPlannerNode(goal, 0, 0, NULL);
 
-        int start_id = gSpatialDatabase->getCellIndexFromLocation(start.x, start.z);
-        int goal_id = gSpatialDatabase->getCellIndexFromLocation(goal.x, goal.z);
+		openSet.insert(startNode);
 
-        AStarPlannerNode startNode = new AStarPlannerNode(start, 0, heuristicManhattan(start_id, goal_id), null);               //use euclidean as alternative 
-        AStarPlannerNode goalNode = new AStarPlannerNode(goal, 0, 0, null);
+		while(!openSet.empty()){
+			AStarPlannerNode* currentNode = *(openSet.begin());
+			openSet.erase(openSet.begin());
+			closeSet.insert(currentNode);
 
-        openSet.push(&startNode);
+			if(*currentNode == *goalNode){
+				std::cout << "We found a path!!!!" << std::endl;
+				return constructPath(agent_path, currentNode);
+			}
 
-        while(!openSet.empty()){
-            const AStarPlannerNode&* currentNode = openSet.top();
-            openSet.pop();
-            closeSet.push(currentNode);
+			std::vector<AStarPlannerNode*> neighbors = getNeighborNodes(currentNode);//gSpatialDatabase->getCellIndexFromLocation(currentNode->point.x, currentNode->point.z));
 
-            if(*currentNode == goalNode){
-                return constructPath(agent_path, currentNode);
-            }
+			for (std::vector<AStarPlannerNode*>::iterator it = neighbors.begin(); 
+					it != neighbors.end(); ++it){
+				if(closeSet.find(*it) != closeSet.end()){
+					continue;
+				}
 
-            std::vector<AStarPlannerNode> neighbors = getNeighborNodes(gSpatialDatabase->getCellIndexFromLocation(currentNode->poit.x, currentNode->point.z));
+				// calculate distance from current node to this neighbor
+				double new_g = currentNode->g + 1;
 
-            for (std::vector<AStarPlannerNode>::iterator it = neighbors.begin(); 
-                    it != neighbors.end(); ++it){
-                if(it->point.x< 0 || it->point.x > gSpatialDatabase->getNumCellsX - 1
-                        || it->point.z < 0 || it->point.z > gSpatialDatabase->getNumCellsZ - 1)
-                {
-                    continue;
-                }
+				if(new_g < (*it)->g){
+					(*it)->parent = currentNode;
+					(*it)->g = new_g;
+					(*it)->f = new_g +  heuristicManhattan((*it)->index, goalNode->index);
 
-                int neighbor_id = gSpatialDatabase->getCellIndexFromLocation(it->point); 
+					if(openSet.find(*it) == openSet.end()) {
+						openSet.insert(*it);
+					} else {
+						// need to modify to update openSet
+						openSet.erase(openSet.find(*it));
+						openSet.insert(*it);
+					}
+				}
+			}
+		}
 
-                if(!canBeTraversed(neighbor_id)){
-                    continue;
-                }
-
-                if(closeSet.find(it) != closeSet.end()){
-                    continue;
-                }
-                double new_g = currentNode.g + 1;
-
-                if(new_g < it->g){
-                    it->parent = currentNode;
-                    it->g = new_g;
-                    it->f = new_g +  heuristicManhattan(neighbor_id, goal_id);
-                }
-                
-                if(openSet.find(it) == openSet.end()){
-                    openSet.push(it);
-                }
-            }
-
-        }
-
+		std::cout << "No path!!!!" << std::endl;
 		return false;
 	}
 
-    std::vector<AStarPlannerNode> getNeighborNodes(unsigned int current_id){
-        unsigned int x, z;
-        gSpatialDatabase->getGridCoordinatesFromIndex(current_id, x, z);
-        std::vector<AStarPlannerNode> neighbors;
-        Util::Point result;
-        std::vector<std::pair<unsigned int, unsigned int>> neiCells(
-                std::pair<x-1, z-1>, std::pair<x-1, z>, std::pair<x-1, z+1>,
-                std::pair<x+1, z-1>, std::pair<x+1, z>, std::pair<x+1, z+1>,
-                std::pair<x,z-1>, std::pair<x,z+1>);
-        //very stupid implementation here...........
-        
-        for(std::vector<std::pair<unsigned int, unsigned int>>::iterator it = neiCells.begin(); it != neiCells.end(); ++it){
+	std::vector<AStarPlannerNode*> AStarPlanner::getNeighborNodes(AStarPlannerNode* currentNode) { //unsigned int current_id){
+		unsigned int x = currentNode->cell.x;
+		unsigned int z = currentNode->cell.z;
 
-            gSpatialDatabase->getLocationFromIndex(gSpatialDatabase->getCellIndexFromGridCoords(it->first, it->second), result);
-            neighbors.push_back(AStarPlannerNode(result, std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), null));
+		std::vector<AStarPlannerNode*> neighbors;
 
-        }
-        
-        return neighbors;
-    }
+		for (int i = x - 1; i < x + 1; ++i) {
+			for (int j = z - 1; j < z + 1; ++j) {
+				if (i == x && j == z) continue;
+				if (i < 0 || i >= maze.size()) continue;
+				if (j < 0 || j >= maze[i].size()) continue;
 
-    bool constructPath(std::vector<Util::Point>& agent_path, AStarPlannerNode&* endNode)
-    {
-        if(!endNode){
-            return false;
-        }
-        while(endNode->parent){
-            std::vector<Utill::Point>::iterator it = agent_path.begin();
-            agent_path.insert(it, endNode->point);
-            endNode = endNode->parent;
-        }    
-        return true;
-    }
+				if(!canBeTraversed(maze[i][j].index)){
+					continue;
+				}
+				neighbors.push_back(&maze[i][j]);
+			}
+		}
 
-    int heuristicManhattan(int start_id, int goal_id){
-        unsigned int start_x, start_z, goal_x, goal_z;
-        gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
-        gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
+		return neighbors;
+	}
 
-        return double(abs(goal_x - start_x) + abs(goal_z - start_z));
-    }
+	bool AStarPlanner::constructPath(std::vector<Util::Point>& agent_path, AStarPlannerNode* endNode)
+	{
+		if(!endNode){
+			return false;
+		}
+		while(endNode->parent){
+			agent_path.insert(agent_path.begin(), endNode->point);
+			endNode = endNode->parent;
+		}    
+		agent_path.insert(agent_path.begin(), endNode->point);
+		return true;
+	}
 
-    int heuristicEuclidean(int start_id, int goal_id){
-        unsigned int start_x, start_z, goal_x, goal_z;
-        gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
-        gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
+	int AStarPlanner::heuristicManhattan(int start_id, int goal_id){
+		unsigned int start_x, start_z, goal_x, goal_z;
+		gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
+		gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
 
-        return sqrt(pow(double((goal_x - start_x)), 2.0) + pow(double(goal_z - start_z), 2.0));   
-    }
+		return double(abs(goal_x - start_x) + abs(goal_z - start_z));
+	}
 
-}
+	int AStarPlanner::heuristicEuclidean(int start_id, int goal_id){
+		unsigned int start_x, start_z, goal_x, goal_z;
+		gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
+		gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
+
+		return sqrt(pow(double((goal_x - start_x)), 2.0) + pow(double(goal_z - start_z), 2.0));   
+	}
+
+	}
