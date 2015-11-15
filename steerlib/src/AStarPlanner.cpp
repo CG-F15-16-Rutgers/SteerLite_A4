@@ -96,25 +96,26 @@ namespace SteerLib {
 		openSet.push_back(startNode);
 
 		while(!openSet.empty()){
-			std::cout << "open set is :" << std::endl;
+/*			std::cout << "open set is :" << std::endl;
 			for (int i = 0; i < openSet.size(); ++i) {
 				std::cout << openSet[i]->point.x << " "<< openSet[i]->point.z << " " << openSet[i]->cell.x << " " << openSet[i]->cell.z << " " << openSet[i]->f << " " << openSet[i]->g << std::endl;
 			}
-
 			std::cout << std::endl;
 
+*/
 			AStarPlannerNode* currentNode = *(openSet.begin());
 			openSet.erase(openSet.begin());
 			closeSet.insert(currentNode);
 
 			if(*currentNode == *goalNode){
 				std::cout << "We found a path!!!!" << std::endl;
+				std::cout << "path length is " << goalNode->f << " expanded Nodes are " << closeSet.size() << std:: endl;
 				return constructPath(agent_path, currentNode);
 			}
 
 			std::vector<AStarPlannerNode*> neighbors = getNeighborNodes(currentNode);
 
-			std::cout << "Find " << neighbors.size() << " neighbors for node at " << currentNode->cell.x << " " << currentNode->cell.z << std::endl;
+//			std::cout << "Find " << neighbors.size() << " neighbors for node at " << currentNode->cell.x << " " << currentNode->cell.z << std::endl;
 
 			for (std::vector<AStarPlannerNode*>::iterator it = neighbors.begin(); 
 					it != neighbors.end(); ++it){
@@ -135,7 +136,7 @@ namespace SteerLib {
 						openSet.push_back(*it);
 					}
 				} else {
-					std::cout << "new_g = " << new_g << " it->g = " << (*it)->g << std::endl;
+//					std::cout << "new_g = " << new_g << " it->g = " << (*it)->g << std::endl;
 				}
 			}
 

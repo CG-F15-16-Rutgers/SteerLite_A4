@@ -15,7 +15,7 @@
 #define MAX_SPEED 0.13f
 #define AGENT_MASS 1.0f
 #define GOAL_REGION 0.1f
-#define DURATION 15
+#define DURATION 1
 
 SearchAgent::SearchAgent()
 {
