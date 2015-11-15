@@ -92,7 +92,8 @@ namespace SteerLib {
 		AStarPlannerNode* startNode = &maze[start_x][start_z];//new AStarPlannerNode(start, 0, heuristicManhattan(start_id, goal_id), NULL);               //use euclidean as alternative 
 		AStarPlannerNode* goalNode = &maze[goal_x][goal_z];//new AStarPlannerNode(goal, 0, 0, NULL);
 		startNode->g = 0;
-		startNode->f = heuristicManhattan(startNode->index, goalNode->index);
+		//startNode->f = heuristicManhattan(start_x, start_z, goal_x, goal_z);
+		startNode->f = heuristicEuclidean(start_x, start_z, goal_x, goal_z);
 		openSet.push_back(startNode);
 
 		while(!openSet.empty()){
@@ -129,7 +130,8 @@ namespace SteerLib {
 				if(new_g < (*it)->g) {
 					(*it)->parent = currentNode;
 					(*it)->g = new_g;
-					(*it)->f = new_g +  heuristicManhattan((*it)->index, goalNode->index);
+					//(*it)->f = new_g +  heuristicManhattan((*it)->index, goalNode->index);
+					(*it)->f = new_g +  heuristicEuclidean((*it)->cell.x, (*it)->cell.z, goalNode->cell.x, goalNode->cell.z);
 
 					std::vector<AStarPlannerNode*>::iterator myit = std::find(openSet.begin(), openSet.end(), *it);
 				        if (myit == openSet.end()) {
@@ -182,20 +184,12 @@ namespace SteerLib {
 		return true;
 	}
 
-	int AStarPlanner::heuristicManhattan(int start_id, int goal_id){
-		unsigned int start_x, start_z, goal_x, goal_z;
-		gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
-		gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
-
-		return double(abs(goal_x - start_x) + abs(goal_z - start_z));
+	double AStarPlanner::heuristicManhattan(int x_1, int z_1, int x_2, int z_2) { 
+		return double(abs(x_1 - x_2) + abs(z_1 - z_2));
 	}
 
-	int AStarPlanner::heuristicEuclidean(int start_id, int goal_id){
-		unsigned int start_x, start_z, goal_x, goal_z;
-		gSpatialDatabase->getGridCoordinatesFromIndex(start_id, start_x, start_z);
-		gSpatialDatabase->getGridCoordinatesFromIndex(goal_id, goal_x, goal_z);
-
-		return sqrt(pow(double((goal_x - start_x)), 2.0) + pow(double(goal_z - start_z), 2.0));   
+	double AStarPlanner::heuristicEuclidean(int x_1, int z_1, int x_2, int z_2) {
+		return sqrt(pow(double((x_1 - x_2)), 2.0) + pow(double(z_1 - z_2), 2.0));   
 	}
 
 }

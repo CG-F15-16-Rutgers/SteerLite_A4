@@ -122,8 +122,8 @@ append_to_path : An optional argument to append to agent_path instead of overwri
 */
 
 			bool computePath(std::vector<Util::Point>& agent_path, Util::Point start, Util::Point goal, SteerLib::GridDatabase2D * _gSpatialDatabase, bool append_to_path = false);
-			int heuristicEuclidean(int start_id, int goal_id);
-			int heuristicManhattan(int start_id, int goal_id);
+			double heuristicEuclidean(int x_1, int z_1, int x_2, int z_2);
+			double heuristicManhattan(int x_1, int z_1, int x_2, int z_2);
 			bool constructPath(std::vector<Util::Point>& agent_path, AStarPlannerNode* endNode);
 			std::vector<AStarPlannerNode*> getNeighborNodes(AStarPlannerNode* current_node);
 		private:
