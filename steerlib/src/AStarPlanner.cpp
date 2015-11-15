@@ -22,8 +22,7 @@
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 
-namespace SteerLib
-{
+namespace SteerLib {
 	AStarPlanner::AStarPlanner(){}
 
 	AStarPlanner::~AStarPlanner(){}
@@ -37,10 +36,10 @@ namespace SteerLib
 		int x_range_min, x_range_max, z_range_min, z_range_max;
 
 		x_range_min = MAX(x-OBSTACLE_CLEARANCE, 0);
-		x_range_max = MIN(x+OBSTACLE_CLEARANCE, gSpatialDatabase->getNumCellsX());
+		x_range_max = MIN(x+OBSTACLE_CLEARANCE, gSpatialDatabase->getNumCellsX() - 1);
 
 		z_range_min = MAX(z-OBSTACLE_CLEARANCE, 0);
-		z_range_max = MIN(z+OBSTACLE_CLEARANCE, gSpatialDatabase->getNumCellsZ());
+		z_range_max = MIN(z+OBSTACLE_CLEARANCE, gSpatialDatabase->getNumCellsZ() - 1);
 
 
 		for (int i = x_range_min; i<=x_range_max; i+=GRID_STEP)
@@ -83,19 +82,26 @@ namespace SteerLib
 				gSpatialDatabase->getLocationFromIndex(maze[i][j].index, maze[i][j].point);
 			}
 		}
-		
+
 		unsigned int start_index = gSpatialDatabase->getCellIndexFromLocation(start);
 		unsigned int goal_index = gSpatialDatabase->getCellIndexFromLocation(goal);
 		unsigned int start_x, start_z;
-	       unsigned int goal_x, goal_z;
-       		gSpatialDatabase->getGridCoordinatesFromIndex(start_index, start_x, start_z); 
-       		gSpatialDatabase->getGridCoordinatesFromIndex(goal_index, goal_x, goal_z); 
+		unsigned int goal_x, goal_z;
+		gSpatialDatabase->getGridCoordinatesFromIndex(start_index, start_x, start_z); 
+		gSpatialDatabase->getGridCoordinatesFromIndex(goal_index, goal_x, goal_z); 
 		AStarPlannerNode* startNode = &maze[start_x][start_z];//new AStarPlannerNode(start, 0, heuristicManhattan(start_id, goal_id), NULL);               //use euclidean as alternative 
 		AStarPlannerNode* goalNode = &maze[goal_x][goal_z];//new AStarPlannerNode(goal, 0, 0, NULL);
-
-		openSet.insert(startNode);
+		startNode->g = 0;
+		startNode->f = heuristicManhattan(startNode->index, goalNode->index);
+		openSet.push_back(startNode);
 
 		while(!openSet.empty()){
+/*			std::cout << "open set is :";
+			for (int i = 0; i < openSet.size(); ++i) {
+				std::cout << openSet[i]->f << " ";
+			}
+			std::cout << std::endl;
+*/
 			AStarPlannerNode* currentNode = *(openSet.begin());
 			openSet.erase(openSet.begin());
 			closeSet.insert(currentNode);
@@ -105,7 +111,9 @@ namespace SteerLib
 				return constructPath(agent_path, currentNode);
 			}
 
-			std::vector<AStarPlannerNode*> neighbors = getNeighborNodes(currentNode);//gSpatialDatabase->getCellIndexFromLocation(currentNode->point.x, currentNode->point.z));
+			std::vector<AStarPlannerNode*> neighbors = getNeighborNodes(currentNode);
+
+			std::cout << "Find " << neighbors.size() << " neighbors for node at " << currentNode->cell.x << " " << currentNode->cell.z << std::endl;
 
 			for (std::vector<AStarPlannerNode*>::iterator it = neighbors.begin(); 
 					it != neighbors.end(); ++it){
@@ -116,34 +124,35 @@ namespace SteerLib
 				// calculate distance from current node to this neighbor
 				double new_g = currentNode->g + 1;
 
-				if(new_g < (*it)->g){
+				if(new_g < (*it)->g) {
 					(*it)->parent = currentNode;
 					(*it)->g = new_g;
 					(*it)->f = new_g +  heuristicManhattan((*it)->index, goalNode->index);
 
-					if(openSet.find(*it) == openSet.end()) {
-						openSet.insert(*it);
-					} else {
-						// need to modify to update openSet
-						openSet.erase(openSet.find(*it));
-						openSet.insert(*it);
+					std::vector<AStarPlannerNode*>::iterator myit = std::find(openSet.begin(), openSet.end(), *it);
+				        if (myit == openSet.end()) {
+						openSet.push_back(*it);
 					}
+				} else {
+					std::cout << "new_g = " << new_g << " it->g = " << (*it)->g << std::endl;
 				}
 			}
+
+			std::sort(openSet.begin(), openSet.end(), NodeCompare());
 		}
 
 		std::cout << "No path!!!!" << std::endl;
 		return false;
 	}
 
-	std::vector<AStarPlannerNode*> AStarPlanner::getNeighborNodes(AStarPlannerNode* currentNode) { //unsigned int current_id){
+	std::vector<AStarPlannerNode*> AStarPlanner::getNeighborNodes(AStarPlannerNode* currentNode) { 
 		unsigned int x = currentNode->cell.x;
 		unsigned int z = currentNode->cell.z;
 
 		std::vector<AStarPlannerNode*> neighbors;
 
-		for (int i = x - 1; i < x + 1; ++i) {
-			for (int j = z - 1; j < z + 1; ++j) {
+		for (int i = x - 1; i <= x + 1; ++i) {
+			for (int j = z - 1; j <= z + 1; ++j) {
 				if (i == x && j == z) continue;
 				if (i < 0 || i >= maze.size()) continue;
 				if (j < 0 || j >= maze[i].size()) continue;
@@ -187,4 +196,4 @@ namespace SteerLib
 		return sqrt(pow(double((goal_x - start_x)), 2.0) + pow(double(goal_z - start_z), 2.0));   
 	}
 
-	}
+}

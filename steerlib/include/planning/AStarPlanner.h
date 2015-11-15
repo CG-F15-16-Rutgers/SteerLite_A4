@@ -129,7 +129,7 @@ append_to_path : An optional argument to append to agent_path instead of overwri
 		private:
 			std::vector< std::vector<AStarPlannerNode> > maze;
 			SteerLib::GridDatabase2D * gSpatialDatabase;
-			std::set<AStarPlannerNode*, NodeCompare> openSet;
+			std::vector<AStarPlannerNode*> openSet;
 			std::unordered_set<AStarPlannerNode*> closeSet;
 
 	};
