@@ -92,8 +92,10 @@ namespace SteerLib {
 		AStarPlannerNode* startNode = &maze[start_x][start_z];//new AStarPlannerNode(start, 0, heuristicManhattan(start_id, goal_id), NULL);               //use euclidean as alternative 
 		AStarPlannerNode* goalNode = &maze[goal_x][goal_z];//new AStarPlannerNode(goal, 0, 0, NULL);
 		startNode->g = 0;
-		//startNode->f = heuristicManhattan(start_x, start_z, goal_x, goal_z);
-		startNode->f = heuristicEuclidean(start_x, start_z, goal_x, goal_z);
+		std::cout << "Manhattan!" << std::endl;
+		startNode->f = heuristicManhattan(start_x, start_z, goal_x, goal_z);
+	//	std::cout << "Euclidean!" << std::endl;
+	//	startNode->f = heuristicEuclidean(start_x, start_z, goal_x, goal_z);
 		openSet.push_back(startNode);
 
 		while(!openSet.empty()){
@@ -102,8 +104,8 @@ namespace SteerLib {
 				std::cout << openSet[i]->point.x << " "<< openSet[i]->point.z << " " << openSet[i]->cell.x << " " << openSet[i]->cell.z << " " << openSet[i]->f << " " << openSet[i]->g << std::endl;
 			}
 			std::cout << std::endl;
-
 */
+
 			AStarPlannerNode* currentNode = *(openSet.begin());
 			openSet.erase(openSet.begin());
 			closeSet.insert(currentNode);
@@ -125,13 +127,15 @@ namespace SteerLib {
 				}
 
 				// calculate distance from current node to this neighbor
-				double new_g = currentNode->g + 1;
+				double delta = 1;
+				delta = heuristicEuclidean(currentNode->cell.x, currentNode->cell.z, (*it)->cell.x, (*it)->cell.z);
+				double new_g = currentNode->g + delta;
 
 				if(new_g < (*it)->g) {
 					(*it)->parent = currentNode;
 					(*it)->g = new_g;
-					//(*it)->f = new_g +  heuristicManhattan((*it)->index, goalNode->index);
-					(*it)->f = new_g +  heuristicEuclidean((*it)->cell.x, (*it)->cell.z, goalNode->cell.x, goalNode->cell.z);
+					(*it)->f = new_g +  heuristicManhattan((*it)->cell.x, (*it)->cell.z, goalNode->cell.x, goalNode->cell.z);
+				//	(*it)->f = new_g +  heuristicEuclidean((*it)->cell.x, (*it)->cell.z, goalNode->cell.x, goalNode->cell.z);
 
 					std::vector<AStarPlannerNode*>::iterator myit = std::find(openSet.begin(), openSet.end(), *it);
 				        if (myit == openSet.end()) {
